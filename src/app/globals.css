@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+/*
+  IDX Analyst tokens.
+  Board: the navy header band, styled after the exchange's quote board.
+  Ink on white for everything else. Color only carries meaning:
+  up/down for price direction, three hues for broker categories,
+  turmeric (kunyit) for focus, selection and the analyst.
+*/
+@theme {
+  --color-paper: #f4f6f9;
+  --color-sheet: #ffffff;
+  --color-ink: #15213b;
+  --color-ink-2: #4a556b;
+  --color-ink-3: #626c80;
+  --color-rule: #e1e5ec;
+  --color-rule-strong: #c9d0db;
+  --color-wash: #eef1f6;
+
+  --color-board: #0f1d33;
+  --color-board-2: #182a46;
+  --color-board-rule: #273b5c;
+  --color-board-ink: #e8edf6;
+  --color-board-muted: #97a6bf;
+
+  --color-kunyit: #f2b233;
+  --color-kunyit-deep: #8a5a00;
+  --color-kunyit-wash: #fdf4de;
+
+  --color-up: #0b7a3b;
+  --color-down: #c62f32;
+  --color-up-board: #3dd68c;
+  --color-down-board: #ff7a7a;
+  --color-up-mark: #008300;
+  --color-down-mark: #e34948;
+
+  --color-foreign: #2a78d6;
+  --color-institution: #4a3aa7;
+  --color-retail: #eb6834;
+  --color-other: #8a93a5;
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-kunyit);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  ::selection {
+    background: var(--color-kunyit-wash);
+  }
+  table {
+    border-collapse: collapse;
+  }
+}
+
+@layer utilities {
+  /* Archivo's width axis: condensed for ticker placards and the board. */
+  .condensed {
+    font-variation-settings: "wdth" 72;
+  }
+  .semi-condensed {
+    font-variation-settings: "wdth" 86;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Analyst notes and news summaries read as prose. */
+.prose-note {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  line-height: 1.62;
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+}
+.prose-note > * + * {
+  margin-top: 0.75em;
+}
+.prose-note h1,
+.prose-note h2,
+.prose-note h3 {
+  font-family: var(--font-sans);
+  font-weight: 650;
+  line-height: 1.25;
+  margin-top: 1.25em;
+}
+.prose-note h1 {
+  font-size: 1.3125rem;
+}
+.prose-note h2 {
+  font-size: 1.125rem;
+}
+.prose-note h3 {
+  font-size: 1rem;
+}
+.prose-note ul,
+.prose-note ol {
+  padding-left: 1.25em;
+}
+.prose-note ul {
+  list-style: disc;
+}
+.prose-note ol {
+  list-style: decimal;
+}
+.prose-note li + li {
+  margin-top: 0.25em;
+}
+.prose-note strong {
+  font-weight: 650;
+}
+.prose-note a {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule-strong);
+  text-underline-offset: 2px;
+}
+.prose-note a:hover {
+  text-decoration-color: var(--color-ink);
+}
+.prose-note code {
+  font-family: var(--font-sans);
+  font-size: 0.875em;
+  background: var(--color-wash);
+  padding: 0.05em 0.3em;
+  border-radius: 3px;
+}
+.prose-note blockquote {
+  border-left: 2px solid var(--color-rule-strong);
+  padding-left: 0.9em;
+  color: var(--color-ink-2);
+}
+.prose-note hr {
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+}
+.prose-note .table-wrap {
+  overflow-x: auto;
+}
+.prose-note table {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+  line-height: 1.35;
+}
+.prose-note th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-ink-2);
+  border-bottom: 1px solid var(--color-rule-strong);
+  padding: 0.4em 0.75em 0.4em 0;
+  white-space: nowrap;
+}
+.prose-note td {
+  border-bottom: 1px solid var(--color-rule);
+  padding: 0.4em 0.75em 0.4em 0;
+  vertical-align: top;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
