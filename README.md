@@ -78,6 +78,10 @@ can't touch. It expires after 7 days, or when you disconnect. They are never wri
 database or a log, and never sent to the AI model. Every Sectors credit and Gemini request is billed to your
 own account, and the page footer shows an estimate of today's Sectors credits.
 
+What costs credits: on a public copy everything comes live from your Sectors key, including news and broker
+summaries. Broker summaries are the expensive part, about 26 credits for a year of one stock (1 credit per
+14 days). Answers are cached, so opening the same stock again doesn't charge again.
+
 What you still have to trust: the person running that copy. Their server uses your keys to make requests for
 you, so someone who changed the code could misuse them. Only connect keys to a copy you trust, or
 [run it yourself](#running-it-yourself). If you think a key leaked, rotate it at Sectors or Google: the old one
@@ -100,8 +104,10 @@ To put a copy online for other people to use with their own keys:
    node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
    ```
 3. **Don't set `SECTORS_API_KEY` or `GEMINI_API_KEY`.** They are ignored in this mode anyway, so leave them out.
-4. **Set `BROKSUM_LAST_COMPLETE` to a past date** such as `2020-01-01`, since the local export isn't there; broker
-   data then comes from each visitor's Sectors key.
+4. **Set `BROKSUM_LAST_COMPLETE` to a past date** such as `2020-01-01` and don't set `BROKSUM_DIR`, so every day
+   of broker data comes from each visitor's own Sectors key. If you have a broker-summary export of your own,
+   don't serve it from a public copy, even if it is on the same server: an export licensed for personal use
+   isn't yours to hand to visitors.
 5. **Serve it over HTTPS.** The key cookie is `Secure` in production and browsers won't send it over plain
    HTTP (localhost is the only exception).
 6. **Behind your own reverse proxy** (nginx, Caddy), set `TRUST_PROXY_HEADERS=1` so the connect page can tell
