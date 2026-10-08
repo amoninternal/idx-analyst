@@ -8,7 +8,7 @@ export default function StockNotFound() {
         IDX tickers are four letters, like BBCA or TLKM. Search for the company by name from the bar at the top, or browse every listed
         stock.
       </p>
-      <Link href="/stocks" className="mt-6 inline-flex h-9 items-center rounded bg-ink px-3.5 text-sm font-medium text-white hover:bg-[#23324f]">
+      <Link href="/stocks" className="mt-6 inline-flex h-9 items-center rounded bg-ink px-3.5 text-sm font-medium text-sheet hover:bg-ink-hover">
         Browse all stocks
       </Link>
     </div>

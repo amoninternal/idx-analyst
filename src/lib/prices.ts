@@ -1,6 +1,7 @@
 import "server-only";
 import { dailyFlows } from "./broksum/queries";
-import { config, hasSectorsKey } from "./config";
+import { config } from "./config";
+import { hasSectorsKey } from "./keys";
 import { addDays } from "./dates";
 import { getDailyCandles } from "./sectors/api";
 import { describeError, normalizeSymbol, SectorsError } from "./sectors/client";
@@ -27,7 +28,7 @@ async function localCandles(symbol: string, days: number): Promise<Candle[]> {
 export async function getCandles(symbol: string, days: number): Promise<CandleSeries> {
   const sym = normalizeSymbol(symbol);
   let problem: string | null = null;
-  if (hasSectorsKey()) {
+  if (await hasSectorsKey()) {
     try {
       const candles = await getDailyCandles(sym, days);
       if (candles.length) return { symbol: sym, source: "sectors", candles };

@@ -12,7 +12,7 @@ import {
   type Time,
 } from "lightweight-charts";
 import { fmtIdr, fmtPrice } from "@/lib/format";
-import { P } from "@/lib/palette";
+import { chartColors } from "@/lib/palette";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -49,6 +49,8 @@ export const decimalFormat = (digits: number) => ({
 /** A chart styled with the app's tokens: hairline grid, ink crosshair, readable date ticks. */
 export function makeChart(el: HTMLElement, overrides: DeepPartial<ChartOptions> = {}): IChartApi {
   const fontFamily = getComputedStyle(document.body).fontFamily;
+  // Read now, so the chart takes the current theme's colors.
+  const P = chartColors();
   return createChart(el, {
     autoSize: true,
     layout: {

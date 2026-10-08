@@ -12,9 +12,15 @@ import { config } from "../config";
 
 const dbFile = path.join(config.dataDir, "broksum.duckdb");
 
-const state = ((globalThis as { __idxDuck?: { instance: Promise<DuckDBInstance> | null } }).__idxDuck ??= {
+const state = ((globalThis as { __idxDuck?: { instance: Promise<DuckDBInstance> | null; failedAt: number; error: unknown } }).__idxDuck ??= {
   instance: null,
+  failedAt: 0,
+  error: null,
 });
+
+// After a failed build (no export folder, say), wait before trying again, so every page
+// view doesn't start another build process.
+const RETRY_AFTER_MS = 5 * 60_000;
 
 async function buildDatabase() {
   const script = path.join(process.cwd(), "scripts", "build-broksum-db.mjs");
@@ -26,11 +32,14 @@ async function buildDatabase() {
 }
 
 function instance(): Promise<DuckDBInstance> {
+  if (!state.instance && state.failedAt && Date.now() - state.failedAt < RETRY_AFTER_MS) return Promise.reject(state.error);
   state.instance ??= (async () => {
     if (!fs.existsSync(dbFile)) await buildDatabase();
     return DuckDBInstance.fromCache(dbFile, { access_mode: "READ_ONLY" });
   })().catch((err) => {
     state.instance = null;
+    state.failedAt = Date.now();
+    state.error = err;
     throw err;
   });
   return state.instance;

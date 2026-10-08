@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { config, hasSectorsKey } from "@/lib/config";
+import { config } from "@/lib/config";
+import { hasSectorsKey } from "@/lib/keys";
 import { fmtDate, fmtPrice } from "@/lib/format";
 import { listPositions } from "@/lib/portfolio";
 import { getQuote } from "@/lib/prices";
@@ -22,10 +23,19 @@ async function indexItem(code: string, label: string): Promise<Item | null> {
 /** The board's quote row: indices, then the stocks you hold. */
 export async function QuoteStrip() {
   await connection();
-  if (!hasSectorsKey()) {
+  if (!(await hasSectorsKey())) {
     return (
       <p className="flex h-10 items-center overflow-x-auto border-t border-board-rule text-[13px] whitespace-nowrap text-board-muted">
-        Broker data through {fmtDate(config.broksumLastComplete)}. Add a Sectors API key for live prices, news and fundamentals.
+        {config.keyMode === "user" ? (
+          <>
+            <Link href="/connect" className="mr-1 font-medium text-board-ink underline underline-offset-2">
+              Connect your Sectors key
+            </Link>
+            for live prices, news and fundamentals.
+          </>
+        ) : (
+          <>Broker data through {fmtDate(config.broksumLastComplete)}. Add a Sectors API key for live prices, news and fundamentals.</>
+        )}
       </p>
     );
   }

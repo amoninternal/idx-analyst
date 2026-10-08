@@ -2,17 +2,25 @@ import "server-only";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { config, hasSectorsKey } from "./config";
+import { config } from "./config";
+import { dataScope, hasSectorsKey } from "./keys";
 import { isIsoDate } from "./dates";
 import { getQuote } from "./prices";
 import { getCompanyReport, getSectorsUniverse } from "./sectors/api";
 import { isValidSymbol, normalizeSymbol } from "./sectors/client";
 import type { PortfolioSettings, PortfolioSnapshot, Position, ValuedPosition } from "./types";
 
-// Positions live in .data/portfolio.json, one position per stock. Adding a
-// stock you already hold merges into it at the combined average price.
+// Positions live in .data/portfolio.json when you run the app yourself, and in
+// .data/portfolios/<visitor id>.json with visitor keys, so visitors never see each
+// other's positions. One position per stock; adding a stock you already hold merges
+// into it at the combined average price.
 
-const file = path.join(config.dataDir, "portfolio.json");
+async function portfolioFile(): Promise<string> {
+  const scope = await dataScope();
+  if (scope === "local") return path.join(config.dataDir, "portfolio.json");
+  if (!/^v-[0-9a-f]{32}$/.test(scope)) throw new PortfolioError("Connect your API keys to keep a portfolio.");
+  return path.join(config.dataDir, "portfolios", `${scope}.json`);
+}
 
 type Store = { positions: Position[]; settings: PortfolioSettings };
 
@@ -20,7 +28,7 @@ const DEFAULT_SETTINGS: PortfolioSettings = { buyFeePct: 0.15, sellFeePct: 0.25 
 
 export class PortfolioError extends Error {}
 
-async function load(): Promise<Store> {
+async function load(file: string): Promise<Store> {
   try {
     const raw = JSON.parse(await fs.readFile(file, "utf8")) as Partial<Store>;
     return { positions: raw.positions ?? [], settings: { ...DEFAULT_SETTINGS, ...raw.settings } };
@@ -29,21 +37,29 @@ async function load(): Promise<Store> {
   }
 }
 
-async function save(store: Store) {
-  await fs.mkdir(config.dataDir, { recursive: true });
-  const tmp = `${file}.${Date.now()}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(store, null, 2));
-  await fs.rename(tmp, file);
+async function save(file: string, store: Store) {
+  try {
+    await fs.mkdir(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${Date.now()}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(store, null, 2));
+    await fs.rename(tmp, file);
+  } catch (err) {
+    console.warn("[portfolio] could not save", (err as NodeJS.ErrnoException).code ?? err);
+    // Serverless hosts such as Vercel have a read-only file system.
+    throw new PortfolioError("The portfolio can't be saved on this server: its file system is read-only.");
+  }
 }
 
 // Writes are serialized so two quick edits can't overwrite each other.
 const state = ((globalThis as { __idxPortfolio?: { queue: Promise<unknown> } }).__idxPortfolio ??= { queue: Promise.resolve() });
 
-function mutate<T>(fn: (store: Store) => T): Promise<T> {
+async function mutate<T>(fn: (store: Store) => T): Promise<T> {
+  // Resolve whose file this is before queueing, while the request is in hand.
+  const file = await portfolioFile();
   const run = state.queue.then(async () => {
-    const store = await load();
+    const store = await load(file);
     const result = fn(store);
-    await save(store);
+    await save(file, store);
     return result;
   });
   state.queue = run.catch(() => undefined);
@@ -79,7 +95,7 @@ function validate(input: Partial<PositionInput>, partial: boolean): Partial<Posi
 }
 
 export async function listPositions(): Promise<Store> {
-  return load();
+  return load(await portfolioFile());
 }
 
 export async function addPosition(input: PositionInput): Promise<{ position: Position; merged: boolean }> {
@@ -147,7 +163,7 @@ export async function updateSettings(patch: Partial<PortfolioSettings>): Promise
 
 async function companyInfo(symbols: string[]): Promise<Map<string, { name: string | null; sector: string | null }>> {
   const info = new Map<string, { name: string | null; sector: string | null }>();
-  if (!hasSectorsKey() || symbols.length === 0) return info;
+  if (!(await hasSectorsKey()) || symbols.length === 0) return info;
   const universe = await getSectorsUniverse().catch(() => []);
   for (const e of universe) info.set(e.symbol, { name: e.name, sector: e.sector });
   // The screener may not return sectors; the overview section always does (1 credit, cached 12h).
@@ -168,7 +184,7 @@ async function companyInfo(symbols: string[]): Promise<Map<string, { name: strin
 
 /** Positions valued at the latest close, with P&L, day change and weights. */
 export async function valuePortfolio(): Promise<PortfolioSnapshot> {
-  const { positions, settings } = await load();
+  const { positions, settings } = await load(await portfolioFile());
   const warnings: string[] = [];
   const symbols = positions.map((p) => p.symbol);
   const [quotes, info] = await Promise.all([

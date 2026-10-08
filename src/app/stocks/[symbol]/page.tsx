@@ -5,14 +5,14 @@ import { Suspense } from "react";
 import { SignalStrip, SignalStripFallback } from "@/components/stock/SignalStrip";
 import { Placard } from "@/components/stock/Placard";
 import { StockTabs } from "@/components/stock/StockTabs";
-import { hasSectorsKey } from "@/lib/config";
+import { hasSectorsKey } from "@/lib/keys";
 import { technicalSnapshot } from "@/lib/indicators";
 import { getCandles } from "@/lib/prices";
 import { getCompanyReport } from "@/lib/sectors/api";
 import { isValidSymbol, normalizeSymbol } from "@/lib/symbols";
 
 async function loadReport(symbol: string) {
-  if (!hasSectorsKey()) return null;
+  if (!(await hasSectorsKey())) return null;
   return getCompanyReport(symbol, ["overview", "valuation"]).catch(() => null);
 }
 
@@ -43,7 +43,7 @@ export default async function StockPage(props: PageProps<"/stocks/[symbol]">) {
         <SignalStrip symbol={symbol} report={report} snapshot={snapshot} />
       </Suspense>
       <Suspense>
-        <StockTabs symbol={symbol} initial={series} hasSectors={hasSectorsKey()} />
+        <StockTabs symbol={symbol} initial={series} hasSectors={await hasSectorsKey()} />
       </Suspense>
     </>
   );

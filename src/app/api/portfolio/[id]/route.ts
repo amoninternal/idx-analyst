@@ -1,10 +1,10 @@
-import { errorResponse } from "@/lib/http";
+import { errorResponse, readJson } from "@/lib/http";
 import { removePosition, updatePosition, type PositionInput } from "@/lib/portfolio";
 
 export async function PATCH(request: Request, ctx: RouteContext<"/api/portfolio/[id]">) {
   try {
     const { id } = await ctx.params;
-    const body = (await request.json()) as Partial<PositionInput>;
+    const body = await readJson<Partial<PositionInput>>(request);
     return Response.json(await updatePosition(id, body));
   } catch (err) {
     return errorResponse(err);

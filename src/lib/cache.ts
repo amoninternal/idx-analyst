@@ -8,6 +8,10 @@ import { config } from "./config";
 // Two-level cache (memory, then JSON files under .data/cache) for anything that
 // costs API credits. The disk level survives restarts, so reloading a page
 // during development doesn't spend credits again.
+//
+// With visitor keys, callers put the visitor's data scope in the key (see
+// lib/keys.ts dataScope) and pass persist: false, so one visitor's paid responses
+// are never served to another and nothing a visitor looked up is written to disk.
 
 type Entry = { key: string; storedAt: number; data: unknown };
 
@@ -44,9 +48,10 @@ export async function peek<T>(key: string): Promise<{ data: T; storedAt: number 
   }
 }
 
-export async function put(key: string, data: unknown): Promise<void> {
+export async function put(key: string, data: unknown, persist = true): Promise<void> {
   const entry: Entry = { key, storedAt: Date.now(), data };
   remember(entry);
+  if (!persist) return;
   try {
     await fs.mkdir(cacheDir, { recursive: true });
     const file = fileFor(key);
@@ -67,7 +72,7 @@ export function cached<T>(
   key: string,
   ttlMs: number,
   load: () => Promise<T>,
-  opts: { staleOnError?: (err: unknown) => boolean } = {},
+  opts: { staleOnError?: (err: unknown) => boolean; persist?: boolean } = {},
 ): Promise<T> {
   // Claim the key before the first await, so concurrent callers (a page and its
   // metadata, or parallel tool calls) share one lookup and one paid request.
@@ -82,7 +87,7 @@ export function cached<T>(
     if (hit && Date.now() - hit.storedAt < ttlMs) return hit.data;
     try {
       const data = await load();
-      await put(key, data);
+      await put(key, data, opts.persist ?? true);
       return data;
     } catch (err) {
       if (hit && (opts.staleOnError?.(err) ?? true)) {

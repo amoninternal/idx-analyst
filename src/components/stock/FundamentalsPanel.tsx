@@ -228,11 +228,11 @@ function Dividends({ report }: { report: CompanyReport }) {
 }
 
 const RATING_PARTS = [
-  { key: "strong_buy", label: "Strong buy", color: "#184f95" },
-  { key: "buy", label: "Buy", color: "#86b6ef" },
-  { key: "hold", label: "Hold", color: "#c3c2b7" },
-  { key: "sell", label: "Sell", color: "#ef9a9a" },
-  { key: "strong_sell", label: "Strong sell", color: "#c62f32" },
+  { key: "strong_buy", label: "Strong buy", color: P.rating1 },
+  { key: "buy", label: "Buy", color: P.rating2 },
+  { key: "hold", label: "Hold", color: P.rating3 },
+  { key: "sell", label: "Sell", color: P.rating4 },
+  { key: "strong_sell", label: "Strong sell", color: P.rating5 },
 ] as const;
 
 function AnalystView({ report }: { report: CompanyReport }) {

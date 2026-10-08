@@ -1,4 +1,4 @@
-import { errorResponse } from "@/lib/http";
+import { errorResponse, readJson } from "@/lib/http";
 import { addPosition, updateSettings, valuePortfolio, type PositionInput } from "@/lib/portfolio";
 import type { PortfolioSettings } from "@/lib/types";
 
@@ -12,7 +12,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as PositionInput;
+    const body = await readJson<PositionInput>(request);
     return Response.json(await addPosition(body), { status: 201 });
   } catch (err) {
     return errorResponse(err);
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
 /** Update fee settings. */
 export async function PATCH(request: Request) {
   try {
-    const body = (await request.json()) as Partial<PortfolioSettings>;
+    const body = await readJson<Partial<PortfolioSettings>>(request);
     return Response.json(await updateSettings(body));
   } catch (err) {
     return errorResponse(err);

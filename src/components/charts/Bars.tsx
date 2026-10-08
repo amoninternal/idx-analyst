@@ -102,8 +102,8 @@ export function ColumnChart({
           <svg width={width} height={height} role="img" aria-label={caption} className="block overflow-visible">
             {ticks.map((t) => (
               <g key={t}>
-                <line x1={left} x2={width - right} y1={y(t)} y2={y(t)} stroke={t === 0 ? P.ruleStrong : P.grid} strokeWidth={1} />
-                <text x={left - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} fill={P.ink3} className="tnum">
+                <line x1={left} x2={width - right} y1={y(t)} y2={y(t)} style={{ stroke: t === 0 ? P.ruleStrong : P.grid }} strokeWidth={1} />
+                <text x={left - 8} y={y(t)} dy="0.32em" textAnchor="end" fontSize={11} style={{ fill: P.ink3 }} className="tnum">
                   {format(t)}
                 </text>
               </g>
@@ -116,16 +116,9 @@ export function ColumnChart({
                     const v = s.values[i];
                     if (v === null || !Number.isFinite(v)) return null;
                     const x = x0 + j * (barW + 2);
-                    return (
-                      <path
-                        key={s.key}
-                        d={barPath(x, barW, y(0), y(v))}
-                        fill={s.color}
-                        opacity={hover === null || hover === i ? 1 : 0.55}
-                      />
-                    );
+                    return <path key={s.key} d={barPath(x, barW, y(0), y(v))} style={{ fill: s.color }} opacity={hover === null || hover === i ? 1 : 0.55} />;
                   })}
-                  <text x={left + i * band + band / 2} y={height - 6} textAnchor="middle" fontSize={11} fill={P.ink3}>
+                  <text x={left + i * band + band / 2} y={height - 6} textAnchor="middle" fontSize={11} style={{ fill: P.ink3 }}>
                     {cat}
                   </text>
                   <rect

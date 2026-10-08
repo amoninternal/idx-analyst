@@ -50,7 +50,7 @@ export function AddPositionButton({ symbol, price }: { symbol: string; price: nu
             <div className="space-y-3">
               <p className="text-sm">{message}</p>
               <div className="flex gap-2">
-                <Link href="/portfolio" className="inline-flex h-8 items-center rounded bg-ink px-3 text-[13px] font-medium text-white hover:bg-[#23324f]">
+                <Link href="/portfolio" className="inline-flex h-8 items-center rounded bg-ink px-3 text-[13px] font-medium text-sheet hover:bg-ink-hover">
                   Open portfolio
                 </Link>
                 <button type="button" onClick={() => setMessage(null)} className="h-8 rounded px-3 text-[13px] text-ink-2 hover:bg-wash">

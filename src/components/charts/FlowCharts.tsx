@@ -3,7 +3,8 @@
 import { AreaSeries, LineSeries, LineStyle, type MouseEventParams, type Time } from "lightweight-charts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtCompact, fmtDate, fmtIdr, fmtPrice } from "@/lib/format";
-import { CATEGORY_HEX, P } from "@/lib/palette";
+import { CATEGORY_HEX, chartColors, P, resolveColor, withAlpha } from "@/lib/palette";
+import { useResolvedTheme } from "../ThemeProvider";
 import { CATEGORY_LABEL, type BrokerCategory, type BrokerDrilldown, type DailyFlow } from "@/lib/types";
 import { idrFormat, lineData, makeChart, priceFormat } from "./base";
 
@@ -32,21 +33,33 @@ export function CategoryFlowChart({ daily, height = 380 }: { daily: DailyFlow[];
     });
   }, [daily]);
   const { index, handler } = useHover(times);
+  const theme = useResolvedTheme();
 
   useEffect(() => {
     const el = ref.current;
     if (!el || daily.length === 0) return;
     const chart = makeChart(el);
-    const price = chart.addSeries(LineSeries, { color: P.ink, lineWidth: 2, priceLineVisible: false, priceFormat });
-    price.setData(lineData(times, daily.map((d) => d.vwap)));
+    const C = chartColors();
+    const price = chart.addSeries(LineSeries, { color: C.ink, lineWidth: 2, priceLineVisible: false, priceFormat });
+    price.setData(
+      lineData(
+        times,
+        daily.map((d) => d.vwap),
+      ),
+    );
     for (const c of FLOW_CATEGORIES) {
       const s = chart.addSeries(
         LineSeries,
-        { color: CATEGORY_HEX[c], lineWidth: 2, priceLineVisible: false, lastValueVisible: true, priceFormat: idrFormat },
+        { color: resolveColor(CATEGORY_HEX[c], C), lineWidth: 2, priceLineVisible: false, lastValueVisible: true, priceFormat: idrFormat },
         1,
       );
-      s.setData(lineData(times, cumulative.map((r) => r[c])));
-      if (c === "foreign") s.createPriceLine({ price: 0, color: P.ruleStrong, lineWidth: 1, lineStyle: LineStyle.Solid, axisLabelVisible: false, title: "" });
+      s.setData(
+        lineData(
+          times,
+          cumulative.map((r) => r[c]),
+        ),
+      );
+      if (c === "foreign") s.createPriceLine({ price: 0, color: C.ruleStrong, lineWidth: 1, lineStyle: LineStyle.Solid, axisLabelVisible: false, title: "" });
     }
     chart.panes()[0]?.setStretchFactor(1);
     chart.panes()[1]?.setStretchFactor(1.3);
@@ -56,7 +69,7 @@ export function CategoryFlowChart({ daily, height = 380 }: { daily: DailyFlow[];
       chart.unsubscribeCrosshairMove(handler);
       chart.remove();
     };
-  }, [daily, times, cumulative, handler]);
+  }, [daily, times, cumulative, handler, theme]);
 
   if (daily.length === 0) return null;
   const i = index ?? daily.length - 1;
@@ -86,43 +99,61 @@ export function BrokerPositionChart({ drill, height = 340 }: { drill: BrokerDril
   const times = useMemo(() => drill.days.map((d) => d.date), [drill]);
   const { index, handler } = useHover(times);
   const color = CATEGORY_HEX[drill.category];
+  const theme = useResolvedTheme();
 
   useEffect(() => {
     const el = ref.current;
     if (!el || drill.days.length === 0) return;
     const chart = makeChart(el);
-    const price = chart.addSeries(LineSeries, { color: P.ink, lineWidth: 2, priceLineVisible: false, priceFormat });
-    price.setData(lineData(times, drill.days.map((d) => d.vwap)));
+    const C = chartColors();
+    const tone = resolveColor(color, C);
+    const price = chart.addSeries(LineSeries, { color: C.ink, lineWidth: 2, priceLineVisible: false, priceFormat });
+    price.setData(
+      lineData(
+        times,
+        drill.days.map((d) => d.vwap),
+      ),
+    );
     const cost = chart.addSeries(LineSeries, {
-      color,
+      color: tone,
       lineWidth: 2,
       lineStyle: LineStyle.Dashed,
       priceLineVisible: false,
       lastValueVisible: true,
       priceFormat,
     });
-    cost.setData(lineData(times, drill.days.map((d) => d.avgCost)));
+    cost.setData(
+      lineData(
+        times,
+        drill.days.map((d) => d.avgCost),
+      ),
+    );
     const position = chart.addSeries(
       AreaSeries,
       {
-        lineColor: color,
-        topColor: `${color}26`,
-        bottomColor: `${color}08`,
+        lineColor: tone,
+        topColor: withAlpha(tone, 0.15),
+        bottomColor: withAlpha(tone, 0.03),
         lineWidth: 2,
         priceLineVisible: false,
         priceFormat: lotFormat,
       },
       1,
     );
-    position.setData(lineData(times, drill.days.map((d) => d.cumVolume / 100)));
-    position.createPriceLine({ price: 0, color: P.ruleStrong, lineWidth: 1, lineStyle: LineStyle.Solid, axisLabelVisible: false, title: "" });
+    position.setData(
+      lineData(
+        times,
+        drill.days.map((d) => d.cumVolume / 100),
+      ),
+    );
+    position.createPriceLine({ price: 0, color: C.ruleStrong, lineWidth: 1, lineStyle: LineStyle.Solid, axisLabelVisible: false, title: "" });
     chart.timeScale().fitContent();
     chart.subscribeCrosshairMove(handler);
     return () => {
       chart.unsubscribeCrosshairMove(handler);
       chart.remove();
     };
-  }, [drill, times, color, handler]);
+  }, [drill, times, color, handler, theme]);
 
   if (drill.days.length === 0) return null;
   const d = drill.days[index ?? drill.days.length - 1];
@@ -153,23 +184,3 @@ export function BrokerPositionChart({ drill, height = 340 }: { drill: BrokerDril
 }
 
 /** Single-series area chart for an index. */
-export function IndexChart({ points, height = 220 }: { points: { time: string; value: number }[]; height?: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || points.length === 0) return;
-    const chart = makeChart(el);
-    const s = chart.addSeries(AreaSeries, {
-      priceFormat: { type: "custom", formatter: (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 0 }), minMove: 0.01 },
-      lineColor: P.ink,
-      topColor: "rgba(21, 33, 59, 0.10)",
-      bottomColor: "rgba(21, 33, 59, 0.01)",
-      lineWidth: 2,
-      priceLineVisible: false,
-    });
-    s.setData(points);
-    chart.timeScale().fitContent();
-    return () => chart.remove();
-  }, [points]);
-  return <div ref={ref} className="w-full" style={{ height }} />;
-}

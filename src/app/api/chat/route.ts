@@ -1,9 +1,12 @@
 import { explainAgentError, runAnalyst, type AgentEvent, type ChatMessage } from "@/lib/ai/agent";
-import { hasOpenAIKey } from "@/lib/config";
+import { config } from "@/lib/config";
+import { getKeys, withKeys } from "@/lib/keys";
+import { readBodyLimited } from "@/lib/request-guard";
 import { isValidSymbol, normalizeSymbol } from "@/lib/sectors/client";
 
 const MAX_MESSAGES = 24;
 const MAX_CHARS = 12_000;
+const MAX_BODY = MAX_MESSAGES * MAX_CHARS * 2;
 
 function parseMessages(raw: unknown): ChatMessage[] | null {
   if (!Array.isArray(raw)) return null;
@@ -19,10 +22,24 @@ function parseMessages(raw: unknown): ChatMessage[] | null {
 }
 
 export async function POST(request: Request) {
-  if (!hasOpenAIKey()) {
-    return Response.json({ error: "Add OPENAI_API_KEY to .env.local, then restart the app, to use the analyst." }, { status: 503 });
+  // Resolve this visitor's keys once; the stream and every tool call below use exactly these.
+  const keys = await getKeys();
+  if (!keys.gemini) {
+    const fix =
+      config.keyMode === "user"
+        ? "Connect a Gemini API key on the Connect page to use the analyst."
+        : "Add GEMINI_API_KEY to .env.local, then restart the app, to use the analyst.";
+    return Response.json({ error: fix }, { status: 503 });
   }
-  const body = (await request.json().catch(() => null)) as { messages?: unknown; symbol?: unknown } | null;
+  const raw = await readBodyLimited(request, MAX_BODY);
+  if (raw === null) return Response.json({ error: "The conversation is too long to send." }, { status: 413 });
+  type Body = { messages?: unknown; symbol?: unknown };
+  let body: Body | null = null;
+  try {
+    body = JSON.parse(raw) as Body;
+  } catch {
+    // Handled below as a bad request.
+  }
   const messages = parseMessages(body?.messages);
   if (!messages) return Response.json({ error: "Send at least one message, ending with the user's." }, { status: 400 });
   const symbol = typeof body?.symbol === "string" && isValidSymbol(body.symbol) ? normalizeSymbol(body.symbol) : null;
@@ -32,7 +49,9 @@ export async function POST(request: Request) {
     async start(controller) {
       const send = (event: AgentEvent) => controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
       try {
-        for await (const event of runAnalyst(messages, { symbol }, request.signal)) send(event);
+        await withKeys(keys, async () => {
+          for await (const event of runAnalyst(messages, { symbol }, keys.gemini, request.signal)) send(event);
+        });
         send({ type: "done" });
       } catch (err) {
         if (!request.signal.aborted) send({ type: "error", message: explainAgentError(err) });

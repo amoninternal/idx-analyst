@@ -9,7 +9,8 @@ export type Candle = {
   volume: number; // shares
 };
 
-export type PriceSource = "sectors" | "local-vwap";
+/** "index" series carry closes only (open = high = low = close) and no volume. */
+export type PriceSource = "sectors" | "local-vwap" | "index";
 
 export type CandleSeries = {
   symbol: string;
@@ -205,8 +206,9 @@ export type Universe = {
 };
 
 export type ServiceStatus = {
+  keyMode: "user" | "server";
   sectors: boolean;
-  openai: boolean;
+  gemini: boolean;
   model: string;
   broksum: { ok: boolean; firstDate: string | null; lastDate: string | null; lastComplete: string; tickers: number; error?: string };
   credits: { today: number; date: string };

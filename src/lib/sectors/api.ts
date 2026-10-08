@@ -1,5 +1,6 @@
 import "server-only";
 import { cached, DAY, HOUR, MINUTE } from "../cache";
+import { dataScope } from "../keys";
 import { addDays, apiToday, daysBetween, minDate, todayJakarta } from "../dates";
 import type { Candle, NewsArticle, NewsPage, UniverseEntry } from "../types";
 import { normalizeSymbol, SectorsError, sectorsGet } from "./client";
@@ -436,7 +437,10 @@ async function fetchUniverse(where: string): Promise<UniverseEntry[]> {
 
 /** Every IDX-listed company, largest first. About 5 credits, refreshed daily. */
 export async function getSectorsUniverse(): Promise<UniverseEntry[]> {
-  return cached("universe:sectors:v2", DAY, async () => {
+  // Paid data, so it is cached per visitor like every other Sectors response.
+  const scope = await dataScope();
+  const key = scope === "local" ? "universe:sectors:v2" : `universe:sectors:v2:${scope}`;
+  return cached(key, DAY, async () => {
     let lastError: unknown;
     for (const where of UNIVERSE_QUERIES) {
       try {
@@ -447,7 +451,7 @@ export async function getSectorsUniverse(): Promise<UniverseEntry[]> {
       }
     }
     throw lastError;
-  });
+  }, { persist: scope === "local" });
 }
 
 // --- Sector taxonomy ----------------------------------------------------------

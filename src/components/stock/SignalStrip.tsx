@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { getBrokerSummary } from "@/lib/brokers";
-import { hasSectorsKey } from "@/lib/config";
+import { hasSectorsKey } from "@/lib/keys";
 import type { TechnicalSnapshot } from "@/lib/indicators";
 import { getNews } from "@/lib/sectors/api";
 import type { CompanyReport } from "@/lib/sectors/types";
@@ -46,7 +46,7 @@ export async function SignalStrip({
 }) {
   const [summary, articles] = await Promise.all([
     getBrokerSummary(symbol, "1M").catch(() => null),
-    hasSectorsKey()
+    (await hasSectorsKey())
       ? getNews({ symbols: [symbol], limit: 30 })
           .then((p) => p.articles)
           .catch(() => null)

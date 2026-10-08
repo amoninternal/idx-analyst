@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { ChatView } from "@/components/analyst/ChatView";
 import { SetupNotice } from "@/components/SetupNotice";
-import { config, hasOpenAIKey, hasSectorsKey } from "@/lib/config";
+import { config } from "@/lib/config";
+import { getKeys } from "@/lib/keys";
 
 export const metadata: Metadata = { title: "Analyst" };
 
 export default async function AnalystPage() {
   await connection();
-  const openai = hasOpenAIKey();
+  const keys = await getKeys();
   return (
     <div className="flex h-[calc(100dvh-10rem)] min-h-[520px] flex-col">
       <div className="mb-2">
@@ -17,11 +18,11 @@ export default async function AnalystPage() {
           Analyst
         </h1>
         <p className="mt-1 max-w-2xl text-ink-2">
-          An AI analyst ({config.openaiModel}) that reads prices, broker flow, fundamentals, news and your portfolio before it answers. It
+          An AI analyst (Gemini, {config.geminiModel}) that reads prices, broker flow, fundamentals, news and your portfolio before it answers. It
           can be wrong; check the numbers it cites.
         </p>
       </div>
-      {!openai && <SetupNotice sectors={hasSectorsKey()} openai={false} />}
+      {!keys.gemini && <SetupNotice sectors={keys.sectors.length > 0} gemini={false} />}
       <div className="min-h-0 flex-1">
         <ChatView />
       </div>

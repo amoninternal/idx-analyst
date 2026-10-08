@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Archivo, Source_Serif_4 } from "next/font/google";
+import { cookies } from "next/headers";
 import { AnalystDrawer } from "@/components/analyst/AnalystDrawer";
 import { AnalystProvider } from "@/components/analyst/AnalystProvider";
 import { Board } from "@/components/board/Board";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import { Suspense } from "react";
 import "./globals.css";
 
@@ -26,18 +29,21 @@ export const metadata: Metadata = {
   description: "Charts, broker flow, fundamentals, news and an AI analyst for stocks on the Indonesia Stock Exchange.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
-    <html lang="en" className={`${archivo.variable} ${sourceSerif.variable}`}>
+    <html lang="en" data-theme={theme} className={`${archivo.variable} ${sourceSerif.variable}`}>
       <body className="min-h-dvh">
-        <AnalystProvider>
-          <Board />
-          <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 pb-20 sm:px-6">{children}</main>
-          <Suspense>
-            <SiteFooter />
-          </Suspense>
-          <AnalystDrawer />
-        </AnalystProvider>
+        <ThemeProvider initial={theme}>
+          <AnalystProvider>
+            <Board />
+            <main className="mx-auto w-full max-w-[1440px] px-4 pt-6 pb-20 sm:px-6">{children}</main>
+            <Suspense>
+              <SiteFooter />
+            </Suspense>
+            <AnalystDrawer />
+          </AnalystProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { Maximize2, X } from "lucide-react";
+import { Maximize2, MessageSquarePlus, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -8,7 +8,7 @@ import { useAnalyst } from "./AnalystProvider";
 import { ChatView } from "./ChatView";
 
 export function AnalystDrawer() {
-  const { open, setOpen } = useAnalyst();
+  const { open, setOpen, clear, messages } = useAnalyst();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -36,6 +36,15 @@ export function AnalystDrawer() {
             Analyst
           </h2>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={clear}
+              disabled={messages.length === 0}
+              className="inline-flex h-7 items-center gap-1.5 rounded px-2 text-[13px] text-ink-2 hover:bg-wash hover:text-ink disabled:opacity-40"
+            >
+              <MessageSquarePlus aria-hidden className="size-3.5" />
+              New chat
+            </button>
             <Link
               href="/analyst"
               onClick={() => setOpen(false)}

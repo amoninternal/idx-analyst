@@ -4,10 +4,11 @@ import { flowLeaders } from "@/lib/brokers";
 import { config } from "@/lib/config";
 import { addDays } from "@/lib/dates";
 import { fmtCompact, fmtDate, fmtIdr, fmtPct, fmtPrice } from "@/lib/format";
-import { getForeignFlow, getIndexSeries, getMostTraded, getNews, getTopMovers } from "@/lib/sectors/api";
+import { getIndexCandles } from "@/lib/index-series";
+import { getForeignFlow, getMostTraded, getNews, getTopMovers } from "@/lib/sectors/api";
 import { describeError } from "@/lib/sectors/client";
-import { IndexChart } from "../charts/FlowCharts";
 import { NewsItem } from "../news/NewsFeed";
+import { IndexWorkspace } from "./IndexWorkspace";
 import { Delta, Notice, Section, Signed, Stat } from "../ui";
 
 function Failed({ what, err }: { what: string; err: unknown }) {
@@ -39,13 +40,16 @@ function MiniTable({ head, children }: { head: ReactNode; children: ReactNode })
   );
 }
 
+const INDEX_DAYS = 365;
+
 export async function IndexHero() {
-  let points;
+  let series;
   try {
-    points = await getIndexSeries("ihsg", 365);
+    series = await getIndexCandles("ihsg", INDEX_DAYS);
   } catch (err) {
     return <Failed what="The IHSG index" err={err} />;
   }
+  const points = series.candles.map((c) => ({ time: c.time, value: c.close }));
   const last = points.at(-1);
   const prev = points.at(-2);
   const yearAgo = points[0];
@@ -65,7 +69,7 @@ export async function IndexHero() {
         </div>
       </div>
       <div className="mt-4">
-        <IndexChart points={points} />
+        <IndexWorkspace code="ihsg" initial={series} initialDays={INDEX_DAYS} />
       </div>
     </section>
   );

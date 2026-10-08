@@ -1,6 +1,7 @@
 import "server-only";
 import * as local from "./broksum/queries";
-import { config, hasSectorsKey } from "./config";
+import { config } from "./config";
+import { hasSectorsKey } from "./keys";
 import { addDays, apiToday, daysBetween, maxDate, minDate } from "./dates";
 import { getBrokerDays, getBrokerRegistry, type RawBrokerDay } from "./sectors/api";
 import { describeError, normalizeSymbol } from "./sectors/client";
@@ -42,7 +43,7 @@ type BrokerInfo = { name: string; category: BrokerCategory };
 async function brokerDirectory(): Promise<(code: string) => BrokerInfo> {
   const known = await local.localBrokers().catch(() => new Map<string, local.LocalBroker>());
   let registry = new Map<string, BrokerInfo>();
-  if (hasSectorsKey()) {
+  if (await hasSectorsKey()) {
     try {
       registry = new Map(
         (await getBrokerRegistry()).map((b) => [
@@ -101,8 +102,8 @@ export function computeSignal(rows: BrokerRow[], totalValue: number): FlowSignal
 }
 
 /** The date range a period covers, ending at the latest day any source can serve. */
-function periodRange(period: BrokerPeriod): { start: string; end: string } {
-  const end = hasSectorsKey() ? apiToday() : config.broksumLastComplete;
+async function periodRange(period: BrokerPeriod): Promise<{ start: string; end: string }> {
+  const end = (await hasSectorsKey()) ? apiToday() : config.broksumLastComplete;
   const days = period === "1D" ? 7 : PERIOD_DAYS[period];
   return { start: addDays(end, -(days - 1)), end };
 }
@@ -123,7 +124,7 @@ type Collected = {
 
 async function collect(symbol: string, period: BrokerPeriod): Promise<Collected> {
   const sym = normalizeSymbol(symbol);
-  const { start: rangeStart, end } = periodRange(period);
+  const { start: rangeStart, end } = await periodRange(period);
   const lastComplete = config.broksumLastComplete;
   const info = await brokerDirectory();
   const notes: string[] = [];
@@ -132,7 +133,7 @@ async function collect(symbol: string, period: BrokerPeriod): Promise<Collected>
   // Live part: days after the local export.
   let liveDays: RawBrokerDay[] = [];
   if (end > lastComplete) {
-    if (hasSectorsKey()) {
+    if (await hasSectorsKey()) {
       let liveStart = maxDate(rangeStart, addDays(lastComplete, 1));
       if (daysBetween(liveStart, end) + 1 > MAX_LIVE_DAYS) {
         liveStart = addDays(end, -(MAX_LIVE_DAYS - 1));

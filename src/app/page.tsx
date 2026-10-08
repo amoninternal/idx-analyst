@@ -10,17 +10,16 @@ import {
   SectionFallback,
 } from "@/components/markets/MarketSections";
 import { SetupNotice } from "@/components/SetupNotice";
-import { hasOpenAIKey, hasSectorsKey } from "@/lib/config";
+import { hasGeminiKey, hasSectorsKey } from "@/lib/keys";
 
 export default async function MarketsPage() {
   await connection();
-  const sectors = hasSectorsKey();
-  const openai = hasOpenAIKey();
+  const [sectors, gemini] = await Promise.all([hasSectorsKey(), hasGeminiKey()]);
 
   return (
     <div className="space-y-12">
       <h1 className="sr-only">Markets</h1>
-      <SetupNotice sectors={sectors} openai={openai} />
+      <SetupNotice sectors={sectors} gemini={gemini} />
 
       {sectors && (
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_380px]">

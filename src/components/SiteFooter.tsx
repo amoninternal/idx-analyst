@@ -7,9 +7,9 @@ export async function SiteFooter() {
   await connection();
   const s = await getStatus();
   const items = [
-    s.sectors ? "Sectors API connected" : "Sectors API key not set",
+    s.sectors ? "Sectors API connected" : s.keyMode === "user" ? "Sectors key not connected" : "Sectors API key not set",
     s.broksum.ok ? `Local broker data ${fmtDate(s.broksum.firstDate)} to ${fmtDate(s.broksum.lastComplete)}` : "Local broker data unavailable",
-    s.openai ? `Analyst model ${s.model}` : "OpenAI key not set",
+    s.gemini ? `Analyst model ${s.model}` : s.keyMode === "user" ? "Gemini key not connected" : "Gemini key not set",
     s.sectors ? `About ${s.credits.today.toLocaleString("en-US")} Sectors credits used today` : null,
   ].filter(Boolean);
   return (

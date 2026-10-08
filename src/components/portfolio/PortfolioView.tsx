@@ -187,7 +187,7 @@ export function PortfolioView() {
             <AskAnalystButton
               symbol={null}
               prompt="Review my portfolio: concentration by stock and sector, the weakest and strongest positions, broker flow on my biggest holdings, and anything I should watch."
-              className="inline-flex h-9 items-center gap-2 rounded bg-ink px-3.5 text-sm font-medium text-white hover:bg-[#23324f]"
+              className="inline-flex h-9 items-center gap-2 rounded bg-ink px-3.5 text-sm font-medium text-sheet hover:bg-ink-hover"
             >
               <span aria-hidden className="size-2 rounded-full bg-kunyit" />
               Ask the analyst to review it

@@ -26,7 +26,12 @@ type AnalystContextValue = {
   setOpen: (open: boolean) => void;
   setSymbol: (symbol: string | null) => void;
   ask: (prompt: string, opts?: { symbol?: string | null; openDrawer?: boolean }) => void;
+  /** Replace one of your messages and ask again from there; everything after it is dropped. */
+  edit: (messageId: string, prompt: string) => void;
+  /** Ask the same question again: from a user message, or for an answer, its question. */
+  regenerate: (messageId: string) => void;
   stop: () => void;
+  /** Start a new chat. */
   clear: () => void;
 };
 
@@ -77,18 +82,19 @@ export function AnalystProvider({ children }: { children: ReactNode }) {
     setMessages((all) => all.map((m) => (m.id === id ? fn(m) : m)));
   }, []);
 
-  const ask = useCallback(
-    (prompt: string, opts: { symbol?: string | null; openDrawer?: boolean } = {}) => {
+  /**
+   * Sends `prompt` after the messages in `base` (the conversation up to that point) and
+   * streams the answer in. Asking, editing and regenerating all come through here.
+   */
+  const send = useCallback(
+    (prompt: string, contextSymbol: string | null, base: UiMessage[]) => {
       const text = prompt.trim();
       if (!text || abortRef.current) return;
-      const contextSymbol = opts.symbol === undefined ? symbol : opts.symbol;
-      if (opts.symbol !== undefined) setSymbol(opts.symbol);
-      if (opts.openDrawer) setOpen(true);
 
       const user: UiMessage = { id: newId(), role: "user", content: text, symbol: contextSymbol };
       const reply: UiMessage = { id: newId(), role: "assistant", content: "", tools: [], pending: true };
-      const history = [...messages.filter((m) => !m.error && m.content.trim()), user].map((m) => ({ role: m.role, content: m.content }));
-      setMessages((all) => [...all, user, reply]);
+      const history = [...base.filter((m) => !m.error && m.content.trim()), user].map((m) => ({ role: m.role, content: m.content }));
+      setMessages([...base, user, reply]);
       setBusy(true);
 
       const controller = new AbortController();
@@ -147,24 +153,60 @@ export function AnalystProvider({ children }: { children: ReactNode }) {
             pending: false,
             tools: m.tools?.map((t) => (t.status === "running" ? { ...t, status: "error", detail: "Stopped" } : t)),
           }));
-          abortRef.current = null;
-          setBusy(false);
+          // A new chat may already have started its own request; leave that one alone.
+          if (abortRef.current === controller) {
+            abortRef.current = null;
+            setBusy(false);
+          }
         }
       })();
     },
-    [messages, patchAssistant, symbol],
+    [patchAssistant],
+  );
+
+  const ask = useCallback(
+    (prompt: string, opts: { symbol?: string | null; openDrawer?: boolean } = {}) => {
+      if (abortRef.current) return;
+      const contextSymbol = opts.symbol === undefined ? symbol : opts.symbol;
+      if (opts.symbol !== undefined) setSymbol(opts.symbol);
+      if (opts.openDrawer) setOpen(true);
+      send(prompt, contextSymbol, messages);
+    },
+    [messages, send, symbol],
+  );
+
+  const edit = useCallback(
+    (messageId: string, prompt: string) => {
+      const i = messages.findIndex((m) => m.id === messageId && m.role === "user");
+      if (i < 0 || abortRef.current) return;
+      send(prompt, messages[i].symbol ?? null, messages.slice(0, i));
+    },
+    [messages, send],
+  );
+
+  const regenerate = useCallback(
+    (messageId: string) => {
+      let i = messages.findIndex((m) => m.id === messageId);
+      // For an answer, go back to the question that produced it.
+      while (i >= 0 && messages[i].role !== "user") i--;
+      if (i < 0 || abortRef.current) return;
+      send(messages[i].content, messages[i].symbol ?? null, messages.slice(0, i));
+    },
+    [messages, send],
   );
 
   const stop = useCallback(() => abortRef.current?.abort(), []);
 
   const clear = useCallback(() => {
     abortRef.current?.abort();
+    abortRef.current = null;
+    setBusy(false);
     setMessages([]);
   }, []);
 
   const value = useMemo(
-    () => ({ messages, busy, open, symbol, setOpen, setSymbol, ask, stop, clear }),
-    [messages, busy, open, symbol, ask, stop, clear],
+    () => ({ messages, busy, open, symbol, setOpen, setSymbol, ask, edit, regenerate, stop, clear }),
+    [messages, busy, open, symbol, ask, edit, regenerate, stop, clear],
   );
   return <AnalystContext.Provider value={value}>{children}</AnalystContext.Provider>;
 }

@@ -156,7 +156,7 @@ export function Notice({
       role={tone === "error" ? "alert" : undefined}
       className={clsx(
         "rounded-md border px-4 py-3 text-[13px]",
-        tone === "error" ? "border-down/30 bg-[#fdf1f1] text-ink" : "border-kunyit/50 bg-kunyit-wash text-ink",
+        tone === "error" ? "border-down/30 bg-down-wash text-ink" : "border-kunyit/50 bg-kunyit-wash text-ink",
         className,
       )}
     >

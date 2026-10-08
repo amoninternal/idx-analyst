@@ -2,37 +2,51 @@
 
 /*
   IDX Analyst tokens.
-  Board: the navy header band, styled after the exchange's quote board.
-  Ink on white for everything else. Color only carries meaning:
-  up/down for price direction, three hues for broker categories,
-  turmeric (kunyit) for focus, selection and the analyst.
+
+  Two moods, one system. Light is the default: a calm research desk, deep navy ink on cool
+  paper, the colors of a bank statement rather than a casino. Dark is a focused terminal for
+  long sessions: deep navy, never pure black, so prices read without glare.
+
+  Color only carries meaning:
+  - up/down for price direction. Calm green and brick red, not neon: a falling stock should
+    read as information, not an alarm, so the screen doesn't push panic selling or FOMO.
+    Direction always pairs color with a sign or an arrow.
+  - three hues for broker categories (validated for color-blind separation).
+  - turmeric (kunyit) for focus, selection and the analyst, never for prices.
+
+  The values below are the light theme. The dark theme overrides them further down, for
+  data-theme="dark", and for data-theme="system" when the device prefers dark.
 */
-@theme {
-  --color-paper: #f4f6f9;
+/* static: every token is emitted, so the dark theme and the canvas charts can read them all. */
+@theme static {
+  --color-paper: #f3f5f7;
   --color-sheet: #ffffff;
-  --color-ink: #15213b;
-  --color-ink-2: #4a556b;
-  --color-ink-3: #626c80;
-  --color-rule: #e1e5ec;
-  --color-rule-strong: #c9d0db;
-  --color-wash: #eef1f6;
+  --color-ink: #14213d;
+  --color-ink-hover: #24345a;
+  --color-ink-2: #465267;
+  --color-ink-3: #5d677b;
+  --color-rule: #e1e5eb;
+  --color-rule-strong: #c7ced9;
+  --color-wash: #edf0f4;
 
-  --color-board: #0f1d33;
-  --color-board-2: #182a46;
-  --color-board-rule: #273b5c;
-  --color-board-ink: #e8edf6;
-  --color-board-muted: #97a6bf;
+  --color-board: #10203a;
+  --color-board-2: #1a2c4b;
+  --color-board-rule: #2a3d5e;
+  --color-board-ink: #e8edf5;
+  --color-board-muted: #9aa8bf;
 
-  --color-kunyit: #f2b233;
-  --color-kunyit-deep: #8a5a00;
-  --color-kunyit-wash: #fdf4de;
+  --color-kunyit: #efae2e;
+  --color-kunyit-deep: #7d5200;
+  --color-kunyit-wash: #fbf1d9;
 
-  --color-up: #0b7a3b;
-  --color-down: #c62f32;
-  --color-up-board: #3dd68c;
-  --color-down-board: #ff7a7a;
-  --color-up-mark: #008300;
-  --color-down-mark: #e34948;
+  --color-up: #17734a;
+  --color-down: #b03f36;
+  --color-up-wash: #eaf5ef;
+  --color-down-wash: #fbefed;
+  --color-up-board: #4cd69a;
+  --color-down-board: #ff8a80;
+  --color-up-mark: #24935f;
+  --color-down-mark: #cc5248;
 
   --color-foreign: #2a78d6;
   --color-institution: #4a3aa7;
@@ -44,6 +58,117 @@
 
   --text-2xs: 0.6875rem;
   --text-2xs--line-height: 1rem;
+}
+
+/* Chart-only colors (canvas and SVG charts read these through lib/palette.ts). */
+:root {
+  color-scheme: light;
+  --chart-grid: #eef1f5;
+  --chart-s1: #2a78d6;
+  --chart-s2: #eb6834;
+  --chart-s3: #4a3aa7;
+  --chart-s4: #d55181;
+  --chart-band: #8b93a3;
+  --chart-watermark: rgba(20, 33, 61, 0.07);
+  --chart-rating-1: #184f95;
+  --chart-rating-2: #86b6ef;
+  --chart-rating-3: #c3c2b7;
+  --chart-rating-4: #ef9a9a;
+  --chart-rating-5: #b03f36;
+}
+
+/* Dark: the focused terminal. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper: #0c1524;
+  --color-sheet: #121d30;
+  --color-ink: #e3e9f2;
+  --color-ink-hover: #ffffff;
+  --color-ink-2: #a9b4c6;
+  --color-ink-3: #8793a8;
+  --color-rule: #223049;
+  --color-rule-strong: #34455f;
+  --color-wash: #19263c;
+  --color-board: #08101c;
+  --color-board-2: #142036;
+  --color-board-rule: #1f2c43;
+  --color-board-ink: #e3e9f2;
+  --color-board-muted: #8d9ab1;
+  --color-kunyit: #f2b233;
+  --color-kunyit-deep: #f4c565;
+  --color-kunyit-wash: #3a2e12;
+  --color-up: #52c994;
+  --color-down: #f28479;
+  --color-up-wash: #12302a;
+  --color-down-wash: #3a1e22;
+  --color-up-board: #52c994;
+  --color-down-board: #f28479;
+  --color-up-mark: #3db683;
+  --color-down-mark: #e5695f;
+  --color-foreign: #5b9bea;
+  --color-institution: #9a8cf0;
+  --color-retail: #f2895a;
+  --color-other: #8d97a9;
+  --chart-grid: #1a2740;
+  --chart-s1: #5b9bea;
+  --chart-s2: #f2895a;
+  --chart-s3: #9a8cf0;
+  --chart-s4: #e77aa2;
+  --chart-band: #6f7c93;
+  --chart-watermark: rgba(227, 233, 242, 0.06);
+  --chart-rating-1: #4c86d6;
+  --chart-rating-2: #9cc4f2;
+  --chart-rating-3: #8e8d84;
+  --chart-rating-4: #ee9b9b;
+  --chart-rating-5: #f28479;
+}
+
+/* "Match my device": the same dark values when the device prefers dark. Keep in sync with the block above. */
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --color-paper: #0c1524;
+    --color-sheet: #121d30;
+    --color-ink: #e3e9f2;
+    --color-ink-hover: #ffffff;
+    --color-ink-2: #a9b4c6;
+    --color-ink-3: #8793a8;
+    --color-rule: #223049;
+    --color-rule-strong: #34455f;
+    --color-wash: #19263c;
+    --color-board: #08101c;
+    --color-board-2: #142036;
+    --color-board-rule: #1f2c43;
+    --color-board-ink: #e3e9f2;
+    --color-board-muted: #8d9ab1;
+    --color-kunyit: #f2b233;
+    --color-kunyit-deep: #f4c565;
+    --color-kunyit-wash: #3a2e12;
+    --color-up: #52c994;
+    --color-down: #f28479;
+    --color-up-wash: #12302a;
+    --color-down-wash: #3a1e22;
+    --color-up-board: #52c994;
+    --color-down-board: #f28479;
+    --color-up-mark: #3db683;
+    --color-down-mark: #e5695f;
+    --color-foreign: #5b9bea;
+    --color-institution: #9a8cf0;
+    --color-retail: #f2895a;
+    --color-other: #8d97a9;
+    --chart-grid: #1a2740;
+    --chart-s1: #5b9bea;
+    --chart-s2: #f2895a;
+    --chart-s3: #9a8cf0;
+    --chart-s4: #e77aa2;
+    --chart-band: #6f7c93;
+    --chart-watermark: rgba(227, 233, 242, 0.06);
+    --chart-rating-1: #4c86d6;
+    --chart-rating-2: #9cc4f2;
+    --chart-rating-3: #8e8d84;
+    --chart-rating-4: #ee9b9b;
+    --chart-rating-5: #f28479;
+  }
 }
 
 @layer base {

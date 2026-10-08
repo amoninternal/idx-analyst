@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Screener } from "@/components/stocks/Screener";
 import { StockTable } from "@/components/stocks/StockTable";
-import { hasSectorsKey } from "@/lib/config";
+import { hasSectorsKey } from "@/lib/keys";
 import { getUniverse } from "@/lib/universe";
 
 export const metadata: Metadata = { title: "Stocks" };
@@ -18,7 +18,7 @@ export default async function StocksPage() {
           Every stock on the Indonesia Stock Exchange. Open one for its chart, broker summary, fundamentals and news.
         </p>
       </div>
-      {hasSectorsKey() && <Screener />}
+      {(await hasSectorsKey()) && <Screener />}
       <StockTable universe={universe} />
     </div>
   );

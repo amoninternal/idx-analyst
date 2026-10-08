@@ -1,8 +1,9 @@
 import "server-only";
-import type { FunctionTool } from "openai/resources/responses/responses";
+import type { FunctionDeclaration } from "@google/genai";
 import { runWithSignal } from "../abort";
 import { flowLeaders, getBrokerSummary } from "../brokers";
-import { config, hasSectorsKey } from "../config";
+import { config } from "../config";
+import { hasSectorsKey } from "../keys";
 import { addDays } from "../dates";
 import { technicalSnapshot } from "../indicators";
 import { valuePortfolio } from "../portfolio";
@@ -27,17 +28,22 @@ const FUNDAMENTAL_SECTIONS = ["financials", "dividend", "future", "peers", "mana
 
 const symbolParam = { type: "string", description: "Four-letter IDX ticker, e.g. BBCA." } as const;
 
-function tool(name: string, description: string, properties: Record<string, unknown>): FunctionTool {
+/** A Gemini function declaration. Every parameter is required unless listed in `optional`. */
+function tool(name: string, description: string, properties: Record<string, unknown>, optional: string[] = []): FunctionDeclaration {
+  if (Object.keys(properties).length === 0) return { name, description };
   return {
-    type: "function",
     name,
     description,
-    strict: true,
-    parameters: { type: "object", properties, required: Object.keys(properties), additionalProperties: false },
+    parametersJsonSchema: {
+      type: "object",
+      properties,
+      required: Object.keys(properties).filter((k) => !optional.includes(k)),
+      additionalProperties: false,
+    },
   };
 }
 
-export const TOOL_DEFINITIONS: FunctionTool[] = [
+export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   tool(
     "get_stock_overview",
     "Company profile, sector, market cap, index membership, 52-week and all-time price range, and valuation (P/E, P/B, P/S by year with peer averages, forward P/E, intrinsic value), plus the latest close. Start here for any single-stock question. Costs 2 credits.",
@@ -65,10 +71,11 @@ export const TOOL_DEFINITIONS: FunctionTool[] = [
     "get_news",
     "Recent news articles with Sectors' sentiment tags (Bullish/Bearish) and summaries. Filter by stock, by keyword in the headline, or neither for market-wide news. Costs 1 credit.",
     {
-      symbol: { type: ["string", "null"], description: "Ticker to filter by, or null." },
-      keyword: { type: ["string", "null"], description: "Word to match in headlines, or null." },
+      symbol: { type: "string", description: "Ticker to filter by. Omit for any stock." },
+      keyword: { type: "string", description: "Word to match in headlines. Omit for any headline." },
       limit: { type: "integer", description: "1 to 20." },
     },
+    ["symbol", "keyword", "limit"],
   ),
   tool(
     "screen_stocks",
@@ -128,14 +135,14 @@ function requireSymbol(raw: unknown): string {
   return normalizeSymbol(raw);
 }
 
-function requireSectors() {
-  if (!hasSectorsKey()) throw new Error("The Sectors API key is not configured, so this data is unavailable.");
+async function requireSectors() {
+  if (!(await hasSectorsKey())) throw new Error("No Sectors API key is connected, so this data is unavailable.");
 }
 
 // --- Implementations -------------------------------------------------------------
 
 async function stockOverview(args: { symbol: string }) {
-  requireSectors();
+  await requireSectors();
   const symbol = requireSymbol(args.symbol);
   const [report, quote] = await Promise.all([getCompanyReport(symbol, ["overview", "valuation"]), getQuote(symbol)]);
   const o = report.overview ?? {};
@@ -189,9 +196,9 @@ const KEY_FINANCIALS = [
 ];
 
 async function fundamentals(args: { symbol: string; sections: string[] }) {
-  requireSectors();
+  await requireSectors();
   const symbol = requireSymbol(args.symbol);
-  const sections = args.sections.filter((s): s is (typeof FUNDAMENTAL_SECTIONS)[number] =>
+  const sections = (Array.isArray(args.sections) ? args.sections : []).filter((s): s is (typeof FUNDAMENTAL_SECTIONS)[number] =>
     (FUNDAMENTAL_SECTIONS as readonly string[]).includes(s),
   );
   if (!sections.length) throw new Error("Ask for at least one section.");
@@ -318,7 +325,7 @@ async function brokerFlow(args: { symbol: string; period: string }) {
 }
 
 async function news(args: { symbol: string | null; keyword: string | null; limit: number }) {
-  requireSectors();
+  await requireSectors();
   const symbol = args.symbol ? requireSymbol(args.symbol) : null;
   const page = await getNews({
     symbols: symbol ? [symbol] : undefined,
@@ -341,13 +348,13 @@ async function news(args: { symbol: string | null; keyword: string | null; limit
 }
 
 async function screen(args: { query: string }) {
-  requireSectors();
+  await requireSectors();
   const result = await screenCompanies(args.query);
   return { ...result, rows: result.rows.slice(0, 25) };
 }
 
 async function marketOverview() {
-  requireSectors();
+  await requireSectors();
   const settle = async <T>(p: Promise<T>) => {
     try {
       return await p;

@@ -101,7 +101,7 @@ export function Placard({
         <AskAnalystButton
           symbol={symbol}
           prompt={`Give me a full read on ${symbol}: trend, broker flow, valuation and news. What stands out?`}
-          className="inline-flex h-9 items-center gap-2 rounded bg-ink px-3.5 text-sm font-medium text-white hover:bg-[#23324f]"
+          className="inline-flex h-9 items-center gap-2 rounded bg-ink px-3.5 text-sm font-medium text-sheet hover:bg-ink-hover"
         >
           <span aria-hidden className="size-2 rounded-full bg-kunyit" />
           Ask the analyst about {symbol}

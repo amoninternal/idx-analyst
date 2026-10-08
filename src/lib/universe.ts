@@ -1,6 +1,7 @@
 import "server-only";
 import { localTickers } from "./broksum/queries";
-import { config, hasSectorsKey } from "./config";
+import { config } from "./config";
+import { hasSectorsKey } from "./keys";
 import { getSectorsUniverse } from "./sectors/api";
 import { describeError } from "./sectors/client";
 import type { Universe, UniverseEntry } from "./types";
@@ -10,7 +11,7 @@ const LOCAL_NOTE = "Showing stocks from the local broker data, priced at their l
 /** Every listed stock: from the Sectors screener when possible, else the local export. */
 export async function getUniverse(): Promise<Universe> {
   let problem: string | null = null;
-  if (hasSectorsKey()) {
+  if (await hasSectorsKey()) {
     try {
       const entries = await getSectorsUniverse();
       if (entries.length) return { source: "sectors", entries };
