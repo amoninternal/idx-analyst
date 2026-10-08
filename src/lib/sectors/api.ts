@@ -401,6 +401,19 @@ const UNIVERSE_QUERIES = [
   "market_cap > 0",
 ];
 
+/**
+ * Age limit for daily snapshots (prices and day changes for every stock). IDX closes at 16:00
+ * Jakarta time and Sectors has the day's closes by early evening, so anything fetched before the
+ * most recent 17:30 counts as stale. That is at most one refresh a day, right after the close.
+ */
+function sinceEveningRefresh(): number {
+  const now = Date.now();
+  const jakarta = new Date(now + 7 * HOUR);
+  let boundary = Date.UTC(jakarta.getUTCFullYear(), jakarta.getUTCMonth(), jakarta.getUTCDate(), 17, 30) - 7 * HOUR;
+  if (boundary > now) boundary -= DAY;
+  return Math.max(10 * MINUTE, now - boundary);
+}
+
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const str = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : null);
 
@@ -410,7 +423,7 @@ async function fetchUniverse(where: string): Promise<UniverseEntry[]> {
     const raw = await sectorsGet<RawScreener>({
       path: "/v2/companies/",
       params: { where, order_by: "-market_cap", limit: 200, offset, include_query_values: true },
-      ttlMs: DAY,
+      ttlMs: sinceEveningRefresh(),
       cost: 1,
     });
     for (const r of raw.results ?? []) {
@@ -435,12 +448,12 @@ async function fetchUniverse(where: string): Promise<UniverseEntry[]> {
   return entries;
 }
 
-/** Every IDX-listed company, largest first. About 5 credits, refreshed daily. */
+/** Every IDX-listed company, largest first. About 5 credits, refreshed once a day after the close. */
 export async function getSectorsUniverse(): Promise<UniverseEntry[]> {
   // Paid data, so it is cached per visitor like every other Sectors response.
   const scope = await dataScope();
   const key = scope === "local" ? "universe:sectors:v2" : `universe:sectors:v2:${scope}`;
-  return cached(key, DAY, async () => {
+  return cached(key, sinceEveningRefresh(), async () => {
     let lastError: unknown;
     for (const where of UNIVERSE_QUERIES) {
       try {

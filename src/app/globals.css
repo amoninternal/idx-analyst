@@ -302,6 +302,46 @@
   vertical-align: top;
 }
 
+/* Ticker tape: two identical passes slide left by one pass, then repeat without a seam. */
+.tape {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+.tape-track {
+  display: flex;
+  width: max-content;
+  animation: tape-slide 60s linear infinite;
+}
+.tape:hover .tape-track,
+.tape:focus-within .tape-track,
+.tape[data-paused] .tape-track {
+  animation-play-state: paused;
+}
+@keyframes tape-slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No motion: the tape becomes a row you scroll by hand, shown once. */
+  .tape {
+    overflow-x: auto;
+    mask-image: none;
+  }
+  .tape-track {
+    animation: none !important;
+  }
+  .tape-track > [aria-hidden] {
+    display: none;
+  }
+  .tape-toggle {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
